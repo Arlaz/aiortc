@@ -172,9 +172,11 @@ async def offer(request):
 
 async def on_shutdown(app):
     # close peer connections
+    logger.info(f"Closing {len(pcs)} peer connections...")
     coros = [pc.close() for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
+    logger.info("Shutdown complete")
 
 
 if __name__ == "__main__":

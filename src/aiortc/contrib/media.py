@@ -444,6 +444,7 @@ class MediaRecorder:
 
         :param track: A :class:`aiortc.MediaStreamTrack`.
         """
+        logger.info("Add translate track: %s", track._id + "")
         stream: Union[AudioStream, VideoStream]
         if track.kind == "audio":
             if self.__container.format.name in ("wav", "alsa", "pulse"):
@@ -476,6 +477,7 @@ class MediaRecorder:
         """
         Stop recording.
         """
+        logger.info("Stopping MediaRecorder...")
         if self.__container is not None:
             for track, context in self.__tracks.items():
                 if context.task is not None:
@@ -494,6 +496,7 @@ class MediaRecorder:
         while True:
             try:
                 frame = await track.recv()
+                logger.info(f"Audio frame received: {frame.sample_rate} Hz")
             except MediaStreamError:
                 return
             assert isinstance(frame, (AudioFrame, VideoFrame)), (

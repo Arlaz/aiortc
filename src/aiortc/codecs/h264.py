@@ -17,11 +17,11 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 1000000  # 1 Mbps
-MIN_BITRATE = 500000  # 500 kbps
-MAX_BITRATE = 3000000  # 3 Mbps
+DEFAULT_BITRATE = 20000000  # 20 Mbps
+MIN_BITRATE = 1000000  # 1000 kbps
+MAX_BITRATE = 300000000  # 300 Mbps
 
-MAX_FRAME_RATE = 30
+MAX_FRAME_RATE = 60
 PACKET_MAX = 1300
 
 NAL_TYPE_FU_A = 28
@@ -274,11 +274,26 @@ class H264Encoder(Encoder):
             self.codec.pix_fmt = "yuv420p"
             self.codec.framerate = fractions.Fraction(MAX_FRAME_RATE, 1)
             self.codec.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
+            self.codec.thread_count = 3
             self.codec.options = {
-                "level": "31",
-                "tune": "zerolatency",
+                "preset": "medium",  # fastest encode speed
+                "tune": "zerolatency",  # no VBV buffers, immediate output
+                "crf": "16",  # visually lossless
+                #"bf": "0",  # no B-frames
+                #"refs": "1",  # single reference
+                "rc-lookahead": "0",  # disable lookahead
+                # force every frame to be an IDR if you truly need independence
+                # this doubles as GOP=1, so no inter-frame prediction at all
+
             }
-            self.codec.profile = "Baseline"
+            # self.codec.options_old = {
+            #     "preset": "medium",
+            #     "level": "51",
+            #     "crf": "16",
+            #     "tune": "zerolatency",
+            #     #"keyint": str(MAX_FRAME_RATE * 2)
+            # }
+            self.codec.profile = "high"
 
         data_to_send = b""
         for package in self.codec.encode(frame):
