@@ -17,9 +17,9 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 20000000  # 20 Mbps
-MIN_BITRATE = 1000000  # 1000 kbps
-MAX_BITRATE = 300000000  # 300 Mbps
+DEFAULT_BITRATE = 10_000_000  # 10 Mbps
+MIN_BITRATE = 5_000_000  # 500 kbps
+MAX_BITRATE = 30_000_000  # 30 Mbps
 
 MAX_FRAME_RATE = 60
 PACKET_MAX = 1300
@@ -267,32 +267,22 @@ class H264Encoder(Encoder):
             frame.pict_type = av.video.frame.PictureType.NONE
 
         if self.codec is None:
-            self.codec = av.CodecContext.create("libx264", "w")
+            self.codec = av.CodecContext.create("h264_nvenc", "w")
             self.codec.width = frame.width
             self.codec.height = frame.height
             self.codec.bit_rate = self.target_bitrate
             self.codec.pix_fmt = "yuv420p"
             self.codec.framerate = fractions.Fraction(MAX_FRAME_RATE, 1)
             self.codec.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
-            self.codec.thread_count = 3
-            self.codec.options = {
-                "preset": "medium",  # fastest encode speed
-                "tune": "zerolatency",  # no VBV buffers, immediate output
-                "crf": "16",  # visually lossless
-                #"bf": "0",  # no B-frames
-                #"refs": "1",  # single reference
-                "rc-lookahead": "0",  # disable lookahead
-                # force every frame to be an IDR if you truly need independence
-                # this doubles as GOP=1, so no inter-frame prediction at all
 
+            self.codec.options = {
+                "preset": "p1",
+                "rc": "constqp",
+                "qp": "20",
+                "bf": "0",
+                "zerolatency": "1",
+                "level": "4.2"
             }
-            # self.codec.options_old = {
-            #     "preset": "medium",
-            #     "level": "51",
-            #     "crf": "16",
-            #     "tune": "zerolatency",
-            #     #"keyint": str(MAX_FRAME_RATE * 2)
-            # }
             self.codec.profile = "high"
 
         data_to_send = b""
