@@ -17,9 +17,9 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 1000000  # 1 Mbps
-MIN_BITRATE = 500000  # 500 kbps
-MAX_BITRATE = 3000000  # 3 Mbps
+DEFAULT_BITRATE = 12_000_000  # 12 Mbps = 1.5 MB/s
+MIN_BITRATE = 4_000_000  # 4 Mbps = 0.5 MB/s
+MAX_BITRATE = 16_000_000  # 16 Mbps = 2 MB/s
 
 MAX_FRAME_RATE = 30
 PACKET_MAX = 1300
@@ -267,18 +267,23 @@ class H264Encoder(Encoder):
             frame.pict_type = av.video.frame.PictureType.NONE
 
         if self.codec is None:
-            self.codec = av.CodecContext.create("libx264", "w")
+            self.codec = av.CodecContext.create("h264_nvenc", "w")
             self.codec.width = frame.width
             self.codec.height = frame.height
             self.codec.bit_rate = self.target_bitrate
             self.codec.pix_fmt = "yuv420p"
             self.codec.framerate = fractions.Fraction(MAX_FRAME_RATE, 1)
             self.codec.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
+
             self.codec.options = {
-                "level": "31",
-                "tune": "zerolatency",
+                "preset": "p1",
+                "rc": "constqp",
+                "qp": "20",
+                "bf": "0",
+                "zerolatency": "1",
+                "level": "4.2"
             }
-            self.codec.profile = "Baseline"
+            self.codec.profile = "high"
 
         data_to_send = b""
         for package in self.codec.encode(frame):

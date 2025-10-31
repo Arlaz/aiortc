@@ -16,9 +16,9 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 500000  # 500 kbps
-MIN_BITRATE = 250000  # 250 kbps
-MAX_BITRATE = 1500000  # 1.5 Mbps
+DEFAULT_BITRATE = 10_000_000  # 10 Mbps = 1.25 MB/s
+MIN_BITRATE = 800_000  # 800 kbps = 100 KB/s
+MAX_BITRATE = 16_000_000  # 16 Mbps = 2 MB/s
 
 MAX_FRAME_RATE = 30
 PACKET_MAX = 1300
@@ -211,26 +211,38 @@ class Vp8Encoder(Encoder):
             self.codec = av.CodecContext.create("libvpx", "w")
             self.codec.width = frame.width
             self.codec.height = frame.height
+
+            # keep a rough target, but don't lock it down
             self.codec.bit_rate = self.target_bitrate
+
+            # pixel format + keyframe interval
             self.codec.pix_fmt = "yuv420p"
-            self.codec.gop_size = 3000  # kf_max_dist
-            self.codec.qmin = 2  # rc_min_quantizer
-            self.codec.qmax = 56  # rc_max_quantizer
+            self.codec.gop_size = 5 * MAX_FRAME_RATE  # keyframe every 2 seconds
+
+            # quantizer bounds (quality envelope)
+            self.codec.qmin = 2  # don’t let quality collapse
+            self.codec.qmax = 14  # allow high compression when needed
+
+            # tuning for ultra-low latency & CPU
             self.codec.options = {
-                # We want rc_buf_sz = 1000 and FFmpeg sets:
-                #   rc_buf_sz =  bufsize * 1000 / bit_rate
-                "bufsize": str(self.__target_bitrate),
-                "cpu-used": "-6",
+                # ultra-fast preset → much lower CPU but coarser quality control
+                "cpu-used": "4",
+
+                # realtime encoding (no 2-pass, no buffering)
                 "deadline": "realtime",
                 "lag-in-frames": "0",
-                # Setting minrate = maxrate = bit_rate triggers CBR.
+
+                # enable row-based multi-threading (lightweight)
+                "row-mt": "1",
                 "minrate": str(self.target_bitrate),
                 "maxrate": str(self.target_bitrate),
-                "noise-sensitivity": "4",
-                "overshoot-pct": "15",
-                "partitions": "0",  # VP8_ONE_TOKENPARTITION
-                "static-thresh": "1",
-                "undershoot-pct": "100",
+                "bufsize": str(self.target_bitrate // MAX_FRAME_RATE),
+
+                # enable tile-based parallelism (2^n tiles across width)
+                "tile-columns": "1",
+
+                # disable extra-reference frames (saves CPU)
+                "auto-alt-ref": "0",
             }
             self.codec.thread_count = number_of_threads(
                 frame.width * frame.height, multiprocessing.cpu_count()
