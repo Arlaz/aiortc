@@ -16,9 +16,9 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 10_000_000  # 10 Mbps = 1.25 MB/s
-MIN_BITRATE = 800_000  # 800 kbps = 100 KB/s
-MAX_BITRATE = 16_000_000  # 16 Mbps = 2 MB/s
+DEFAULT_BITRATE = 8_000_000  # 8 Mbps = 1 MB/s
+MIN_BITRATE = 600_000  # 600 kbps = 75 KB/s
+MAX_BITRATE = 12_000_000  # 12 Mbps = 1.5 MB/s
 
 MAX_FRAME_RATE = 30
 PACKET_MAX = 1300
@@ -540,8 +540,8 @@ class Vp8Encoder(Encoder):
             self.codec.gop_size = 5 * MAX_FRAME_RATE  # keyframe every 2 seconds
 
             # quantizer bounds (quality envelope)
-            self.codec.qmin = 2  # don’t let quality collapse
-            self.codec.qmax = 14  # allow high compression when needed
+            self.codec.qmin = 6  # don’t let quality collapse
+            self.codec.qmax = 24  # allow high compression when needed
 
             # tuning for ultra-low latency & CPU
             self.codec.options = {
@@ -723,9 +723,9 @@ class Vp9Encoder(Encoder):
         self.codec.height = height
         self.codec.bit_rate = self.target_bitrate
         self.codec.pix_fmt = "yuv420p"
-        self.codec.gop_size = 3000  # kf_max_dist (same as VP8)
-        self.codec.qmin = 2  # rc_min_quantizer
-        self.codec.qmax = 56  # rc_max_quantizer
+        self.codec.gop_size = 5 * MAX_FRAME_RATE  # kf_max_dist (same as VP8)
+        self.codec.qmin = 6  # rc_min_quantizer
+        self.codec.qmax = 26  # rc_max_quantizer
 
         # VP9-specific options (optimized for realtime WebRTC)
         self.codec.options = {
