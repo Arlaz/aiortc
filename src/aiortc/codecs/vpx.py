@@ -723,9 +723,9 @@ class Vp9Encoder(Encoder):
         self.codec.height = height
         self.codec.bit_rate = self.target_bitrate
         self.codec.pix_fmt = "yuv420p"
-        self.codec.gop_size = 3000  # kf_max_dist (same as VP8)
+        self.codec.gop_size = 5 * MAX_FRAME_RATE  # kf_max_dist (same as VP8)
         self.codec.qmin = 2  # rc_min_quantizer
-        self.codec.qmax = 56  # rc_max_quantizer
+        self.codec.qmax = 16  # rc_max_quantizer
 
         # VP9-specific options (optimized for realtime WebRTC)
         self.codec.options = {
