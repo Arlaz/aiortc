@@ -16,9 +16,9 @@ from .base import Decoder, Encoder
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BITRATE = 4_000_000  # 4 Mbps = 500 KB/s
+DEFAULT_BITRATE = 6_000_000  # 6 Mbps = 750 KB/s
 MIN_BITRATE = 300_000  # 300 kbps = 37.5 KB/s
-MAX_BITRATE = 6_000_000  # 6 Mbps = 750 KB/s
+MAX_BITRATE = 8_000_000  # 8 Mbps = 1 MB/s
 
 MAX_FRAME_RATE = 25
 PACKET_MAX = 1300
@@ -541,7 +541,7 @@ class Vp8Encoder(Encoder):
 
             # quantizer bounds (quality envelope)
             self.codec.qmin = 12  # don’t let quality collapse
-            self.codec.qmax = 36  # allow high compression when needed
+            self.codec.qmax = 24  # allow high compression when needed
 
             # tuning for ultra-low latency & CPU
             self.codec.options = {
@@ -725,7 +725,7 @@ class Vp9Encoder(Encoder):
         self.codec.pix_fmt = "yuv420p"
         self.codec.gop_size = 1 * MAX_FRAME_RATE  # kf_max_dist (same as VP8)
         self.codec.qmin = 12  # rc_min_quantizer
-        self.codec.qmax = 36  # rc_max_quantizer
+        self.codec.qmax = 24  # rc_max_quantizer
 
         # VP9-specific options (optimized for realtime WebRTC)
         self.codec.options = {
